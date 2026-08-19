@@ -11,6 +11,9 @@ test("discovers and opens an idea", async ({ page }) => {
   await page.getByRole("button", { name: /Read its story/ }).click();
   await expect(page.getByRole("heading", { name: "The Repair Language", exact: true })).toBeVisible();
   await expect(page.getByText("Available for adoption", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/#\/idea\/repair-language$/);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "The Repair Language", exact: true })).toBeVisible();
 });
 
 test("shows an empty state and clears filters", async ({ page }) => {

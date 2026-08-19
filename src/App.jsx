@@ -1,56 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Header, IdeaCard, Mark } from "./components";
 import { categories, permissionModes, sampleIdeas } from "./data/sampleIdeas";
-
-function Mark() {
-  return <span className="mark" aria-hidden="true">◌</span>;
-}
-
-function Header({ onNavigate, view }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const navigate = (next) => {
-    onNavigate(next);
-    setMenuOpen(false);
-  };
-
-  return (
-    <header className="site-header">
-      <button className="wordmark" type="button" onClick={() => navigate("home")}>
-        <Mark /> Idea Afterlife
-      </button>
-      <button
-        className="menu-toggle"
-        type="button"
-        aria-expanded={menuOpen}
-        aria-controls="site-navigation"
-        onClick={() => setMenuOpen((open) => !open)}
-      >
-        Menu
-      </button>
-      <nav id="site-navigation" className={menuOpen ? "nav nav--open" : "nav"} aria-label="Primary navigation">
-        <button className={view === "archive" ? "is-active" : ""} type="button" onClick={() => navigate("archive")}>Archive</button>
-        <button type="button" onClick={() => navigate("about")}>How it works</button>
-        <button className="nav__cta" type="button" onClick={() => navigate("submit")}>Leave an idea</button>
-      </nav>
-    </header>
-  );
-}
-
-function IdeaCard({ idea, onOpen }) {
-  return (
-    <article className={`idea-card idea-card--${idea.accent}`}>
-      <div className="idea-card__visual" aria-hidden="true"><span>{idea.year}</span><Mark /></div>
-      <div className="idea-card__body">
-        <div className="idea-card__meta"><span>{idea.category}</span><span>{idea.status}</span></div>
-        <h3>{idea.title}</h3>
-        <p>{idea.summary}</p>
-        <div className="idea-card__footer">
-          <span className="permission">{idea.permission}</span>
-          <button className="text-link" type="button" onClick={() => onOpen(idea)}>Read its story <span aria-hidden="true">↗</span></button>
-        </div>
-      </div>
-    </article>
-  );
-}
 
 function Home({ onNavigate, onOpen }) {
   return (
@@ -149,11 +99,28 @@ function About({ onNavigate }) {
   return <section className="about-page section"><div className="page-intro"><p className="eyebrow">How it works</p><h1>An archive, not an idea grab.</h1><p>Idea Afterlife keeps the origin visible while making room for responsible continuation.</p></div><ol className="steps"><li><span>01</span><div><h2>Leave the whole story</h2><p>Share the possibility, what you tried, where it stopped, and what remains.</p></div></li><li><span>02</span><div><h2>State your intention</h2><p>Choose whether people may only view, find inspiration, remix, collaborate, or independently adopt.</p></div></li><li><span>03</span><div><h2>Grow visible lineage</h2><p>Revivals link back to their origin so credit and lessons are never detached from the next attempt.</p></div></li></ol><button className="button" type="button" onClick={() => onNavigate("submit")}>Leave an idea</button></section>;
 }
 
+function readHashRoute() {
+  const route = window.location.hash.replace(/^#\/?/, "");
+  if (route.startsWith("idea/")) {
+    const idea = sampleIdeas.find((item) => item.id === route.slice(5));
+    if (idea) return { view: "detail", idea };
+  }
+  if (["archive", "about", "submit"].includes(route)) return { view: route, idea: null };
+  return { view: "home", idea: null };
+}
+
 export default function App() {
-  const [view, setView] = useState("home");
-  const [selectedIdea, setSelectedIdea] = useState(null);
-  const navigate = (next) => { setSelectedIdea(null); setView(next); window.scrollTo({ top: 0, behavior: "auto" }); };
-  const openIdea = (idea) => { setSelectedIdea(idea); setView("detail"); window.scrollTo({ top: 0, behavior: "auto" }); };
+  const initialRoute = readHashRoute();
+  const [view, setView] = useState(initialRoute.view);
+  const [selectedIdea, setSelectedIdea] = useState(initialRoute.idea);
+  const applyRoute = (route) => { setSelectedIdea(route.idea); setView(route.view); window.scrollTo({ top: 0, behavior: "auto" }); };
+  const navigate = (next) => { window.location.hash = next === "home" ? "/" : `/${next}`; applyRoute({ view: next, idea: null }); };
+  const openIdea = (idea) => { window.location.hash = `/idea/${idea.id}`; applyRoute({ view: "detail", idea }); };
+  useEffect(() => {
+    const handleHashChange = () => applyRoute(readHashRoute());
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
   useEffect(() => { document.title = view === "home" ? "Idea Afterlife" : `${view === "detail" ? selectedIdea?.title : view[0].toUpperCase() + view.slice(1)} · Idea Afterlife`; }, [view, selectedIdea]);
-  return <div className="app-shell"><Header onNavigate={navigate} view={view} /><main>{view === "home" && <Home onNavigate={navigate} onOpen={openIdea} />}{view === "archive" && <Archive onOpen={openIdea} />}{view === "detail" && selectedIdea && <IdeaDetail idea={selectedIdea} onBack={() => navigate("archive")} onNavigate={navigate} />}{view === "submit" && <SubmitIdea onNavigate={navigate} />}{view === "about" && <About onNavigate={navigate} />}</main><footer className="site-footer"><div><a className="wordmark" href="#top"><Mark /> Idea Afterlife</a><p>Some ideas only need another person to begin.</p></div><div><p>Public prototype · Milestone 1</p><p>Credit the origin. Continue with care.</p></div></footer></div>;
+  return <div className="app-shell"><Header onNavigate={navigate} view={view} /><main>{view === "home" && <Home onNavigate={navigate} onOpen={openIdea} />}{view === "archive" && <Archive onOpen={openIdea} />}{view === "detail" && selectedIdea && <IdeaDetail idea={selectedIdea} onBack={() => navigate("archive")} onNavigate={navigate} />}{view === "submit" && <SubmitIdea onNavigate={navigate} />}{view === "about" && <About onNavigate={navigate} />}</main><footer className="site-footer"><div><button className="wordmark" type="button" onClick={() => navigate("home")}><Mark /> Idea Afterlife</button><p>Some ideas only need another person to begin.</p></div><div><p>Public prototype · Milestone 1</p><p>Credit the origin. Continue with care.</p></div></footer></div>;
 }
