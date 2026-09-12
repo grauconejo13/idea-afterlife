@@ -59,5 +59,5 @@ test("searches narrative fields and filters by status", async ({ page }) => {
   await page.getByPlaceholder("Search titles, stories, or tags").clear();
   await page.getByLabel("Status").selectOption("Paused");
   await expect(page.getByText("01 records")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Quiet Hours" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Borrowed Light" })).toBeVisible();
 });
