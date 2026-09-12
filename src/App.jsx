@@ -38,11 +38,16 @@ function Home({ onNavigate, onOpen }) {
 function Archive({ onOpen }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
+  const [status, setStatus] = useState("All statuses");
   const [permission, setPermission] = useState("All permissions");
+  const statuses = [...new Set(sampleIdeas.map((idea) => idea.status))];
   const filtered = useMemo(() => sampleIdeas.filter((idea) => {
-    const text = `${idea.title} ${idea.summary} ${idea.tags.join(" ")}`.toLowerCase();
-    return text.includes(query.toLowerCase()) && (category === "All" || idea.category === category) && (permission === "All permissions" || idea.permission === permission);
-  }), [query, category, permission]);
+    const text = [idea.title, idea.summary, idea.story, idea.stalled, idea.lessons, idea.lastWish, idea.creator, ...idea.tags, ...idea.remains].join(" ").toLowerCase();
+    return text.includes(query.trim().toLowerCase())
+      && (category === "All" || idea.category === category)
+      && (status === "All statuses" || idea.status === status)
+      && (permission === "All permissions" || idea.permission === permission);
+  }), [query, category, status, permission]);
 
   return (
     <section className="archive-page section">
@@ -50,10 +55,11 @@ function Archive({ onOpen }) {
       <div className="filters" aria-label="Filter ideas">
         <label className="search"><span className="sr-only">Search ideas</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search titles, stories, or tags" /><span aria-hidden="true">⌕</span></label>
         <label><span className="sr-only">Category</span><select value={category} onChange={(event) => setCategory(event.target.value)}>{categories.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label><span className="sr-only">Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option>All statuses</option>{statuses.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label><span className="sr-only">Permission</span><select value={permission} onChange={(event) => setPermission(event.target.value)}><option>All permissions</option>{permissionModes.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
       <div className="result-count" aria-live="polite"><span>{String(filtered.length).padStart(2, "0")} records</span><span>Showing what remains</span></div>
-      {filtered.length ? <div className="idea-grid idea-grid--archive">{filtered.map((idea) => <IdeaCard key={idea.id} idea={idea} onOpen={onOpen} />)}</div> : <div className="empty-state"><Mark /><h2>Nothing rests here yet.</h2><p>Try removing a filter or searching for a broader possibility.</p><button className="button button--quiet" type="button" onClick={() => { setQuery(""); setCategory("All"); setPermission("All permissions"); }}>Clear filters</button></div>}
+      {filtered.length ? <div className="idea-grid idea-grid--archive">{filtered.map((idea) => <IdeaCard key={idea.id} idea={idea} onOpen={onOpen} />)}</div> : <div className="empty-state"><Mark /><h2>Nothing rests here yet.</h2><p>Try removing a filter or searching for a broader possibility.</p><button className="button button--quiet" type="button" onClick={() => { setQuery(""); setCategory("All"); setStatus("All statuses"); setPermission("All permissions"); }}>Clear filters</button></div>}
     </section>
   );
 }
@@ -79,6 +85,12 @@ function IdeaDetail({ idea, onBack, onNavigate }) {
 function SubmitIdea({ onNavigate }) {
   const [submitted, setSubmitted] = useState(false);
   const [title, setTitle] = useState("");
+  const [media, setMedia] = useState([]);
+  useEffect(() => () => media.forEach((item) => URL.revokeObjectURL(item.url)), [media]);
+  const previewMedia = (event) => {
+    const files = Array.from(event.target.files ?? []).slice(0, 4);
+    setMedia(files.map((file) => ({ file, url: URL.createObjectURL(file) })));
+  };
   const submit = (event) => { event.preventDefault(); setSubmitted(true); window.scrollTo({ top: 0, behavior: "smooth" }); };
   if (submitted) return <section className="success-page section"><Mark /><p className="eyebrow">Draft received</p><h1>Your idea has somewhere to rest.</h1><p><strong>{title}</strong> exists only in this browser prototype and has not been published. The real draft and review workflow arrives in Milestone 2.</p><button className="button" type="button" onClick={() => onNavigate("archive")}>Return to the archive</button></section>;
   return (
@@ -87,7 +99,7 @@ function SubmitIdea({ onNavigate }) {
       <form onSubmit={submit}>
         <fieldset><legend><span>01</span> The possibility</legend><label>Idea title<input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="What did you call it?" /></label><label>Short summary<textarea required rows="3" placeholder="Describe the possibility in one or two sentences." /></label><div className="form-row"><label>Category<select required defaultValue=""><option value="" disabled>Choose one</option>{categories.slice(1).map((item) => <option key={item}>{item}</option>)}</select></label><label>Status<select required defaultValue=""><option value="" disabled>Choose one</option><option>Unrealized</option><option>Paused</option><option>Abandoned</option><option>Almost made</option><option>Prototype failed</option></select></label></div></fieldset>
         <fieldset><legend><span>02</span> The story</legend><label>What did it want to become?<textarea required rows="6" placeholder="Share the original intention and the story around it." /></label><label>Why did it stop?<textarea required rows="4" placeholder="Time, cost, confidence, technology, life—or something else?" /></label><label>What did it teach you?<textarea rows="3" placeholder="Leave a useful lesson for the next person." /></label></fieldset>
-        <fieldset><legend><span>03</span> The remains</legend><div className="upload-placeholder"><Mark /><strong>Media arrives in Milestone 2</strong><p>The production form will accept responsibly limited images, video, documents, and prototype links.</p></div><label>What remains?<textarea rows="3" placeholder="List sketches, research, prototypes, files, or links that exist." /></label><label>Your last wish<textarea required rows="3" placeholder="What do you hope someone does with this idea?" /></label></fieldset>
+        <fieldset><legend><span>03</span> The remains</legend><div className="upload-placeholder"><Mark /><label className="upload-control">Add images or video<input type="file" accept="image/*,video/*" multiple onChange={previewMedia} /></label><p>Preview up to four files locally. Nothing is uploaded or saved in this prototype.</p>{media.length > 0 && <div className="media-preview" aria-label="Selected media previews">{media.map(({ file, url }) => <figure key={`${file.name}-${file.lastModified}`}>{file.type.startsWith("video/") ? <video src={url} controls aria-label={`Preview of ${file.name}`} /> : <img src={url} alt={`Preview of ${file.name}`} />}<figcaption>{file.name}</figcaption></figure>)}</div>}</div><label>What remains?<textarea rows="3" placeholder="List sketches, research, prototypes, files, or links that exist." /></label><label>Your last wish<textarea required rows="3" placeholder="What do you hope someone does with this idea?" /></label></fieldset>
         <fieldset><legend><span>04</span> Permission</legend><label>How may others respond?<select required defaultValue=""><option value="" disabled>Select a permission mode</option>{permissionModes.map((item) => <option key={item}>{item}</option>)}</select></label><div className="permission-note"><strong>This is an expression of intent, not a legal license.</strong><p>Published ideas will retain creator credit and visible lineage. Formal licensing controls reuse of protected work.</p></div><label className="check"><input required type="checkbox" /> <span>I understand that this prototype does not transfer ownership and that my selected permission will be displayed publicly.</span></label></fieldset>
         <button className="button button--large" type="submit">Preview this idea's afterlife</button>
       </form>
