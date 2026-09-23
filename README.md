@@ -6,9 +6,9 @@ Idea Afterlife is a place to document unrealized, abandoned, failed, or nearly f
 
 ## Current status
 
-Milestone 0 — documentation and application scaffolding.
+Milestone 1 — public archive prototype, complete.
 
-The repository currently contains a lightweight React/Vite shell, sample idea data, product documentation, architectural decisions, and milestone tasks. Authentication, persistence, uploads, and production UI are intentionally deferred.
+The app includes an editorial landing page, searchable and filterable archive, idea detail pages, explicit permission badges, responsive navigation, and a local-only submission preview. A related-idea flow carries an origin record into the prototype submission experience so a future revival can keep its lineage visible. Authentication, persistence, real uploads, and publishing remain deferred to Milestone 2.
 
 ## Core loop
 
