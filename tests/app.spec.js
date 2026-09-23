@@ -52,6 +52,18 @@ test("validates and completes the prototype submission flow", async ({ page }) =
   await expect(page.getByText("The Pocket Weather Choir", { exact: true })).toBeVisible();
 });
 
+test("starts a related idea from an existing record", async ({ page }) => {
+  await page.goto("/#/idea/quiet-hours");
+  await page.getByRole("button", { name: "Begin a related idea" }).click();
+  await expect(page.getByRole("heading", { name: "Quiet Hours", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/#\/submit\?from=quiet-hours$/);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Quiet Hours", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Start an independent idea instead" }).click();
+  await expect(page.getByText("Beginning from an existing record")).toHaveCount(0);
+  await expect(page).toHaveURL(/#\/submit$/);
+});
+
 test("searches narrative fields and filters by status", async ({ page }) => {
   await page.goto("/#/archive");
   await page.getByPlaceholder("Search titles, stories, or tags").fill("residents");
