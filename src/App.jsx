@@ -76,13 +76,13 @@ function IdeaDetail({ idea, onBack, onNavigate }) {
         <div className="detail-story"><section><p className="eyebrow">The idea</p><h2>What it wanted to become</h2><p>{idea.story}</p></section><section><p className="eyebrow">Where it stopped</p><h2>Why it was left behind</h2><p>{idea.stalled}</p></section><section><p className="eyebrow">What it taught</p><blockquote>{idea.lessons}</blockquote></section></div>
         <aside><div className="permission-panel"><p className="eyebrow">Creator permission</p><h2>{idea.permission}</h2><p>Public sharing does not transfer ownership. Credit this record and follow the creator's stated intent.</p></div><div className="remains"><p className="eyebrow">The remains</p><ul>{idea.remains.map((item) => <li key={item}><span aria-hidden="true">◇</span>{item}</li>)}</ul></div></aside>
       </div>
-      <section className="last-wish"><p className="eyebrow">The last wish</p><blockquote>“{idea.lastWish}”</blockquote><button className="button" type="button" onClick={() => onNavigate("submit")}>Begin a related idea</button></section>
+      <section className="last-wish"><p className="eyebrow">The last wish</p><blockquote>“{idea.lastWish}”</blockquote><button className="button" type="button" onClick={() => onNavigate("submit", idea)}>Begin a related idea</button></section>
       <section className="lineage"><div><p className="eyebrow">Lineage</p><h2>No revivals recorded—yet.</h2></div><p>Future continuations will appear here without erasing where the idea began.</p></section>
     </article>
   );
 }
 
-function SubmitIdea({ onNavigate }) {
+function SubmitIdea({ onNavigate, sourceIdea }) {
   const [submitted, setSubmitted] = useState(false);
   const [title, setTitle] = useState("");
   const [media, setMedia] = useState([]);
@@ -92,16 +92,17 @@ function SubmitIdea({ onNavigate }) {
     setMedia(files.map((file) => ({ file, url: URL.createObjectURL(file) })));
   };
   const submit = (event) => { event.preventDefault(); setSubmitted(true); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  if (submitted) return <section className="success-page section"><Mark /><p className="eyebrow">Draft received</p><h1>Your idea has somewhere to rest.</h1><p><strong>{title}</strong> exists only in this browser prototype and has not been published. The real draft and review workflow arrives in Milestone 2.</p><button className="button" type="button" onClick={() => onNavigate("archive")}>Return to the archive</button></section>;
+  if (submitted) return <section className="success-page section"><Mark /><p className="eyebrow">{sourceIdea ? "Related draft received" : "Draft received"}</p><h1>{sourceIdea ? "Your continuation has somewhere to begin." : "Your idea has somewhere to rest."}</h1><p><strong>{title}</strong> exists only in this browser prototype and has not been published.{sourceIdea && <> It is marked as a continuation of <strong>{sourceIdea.title}</strong>, so the original record stays visible.</>} The real draft, review, and lineage workflow arrives with persistence.</p><button className="button" type="button" onClick={() => onNavigate("archive")}>Return to the archive</button></section>;
   return (
     <section className="submit-page section">
       <div className="page-intro"><p className="eyebrow">Leave an idea behind</p><h1>Tell us what almost existed.</h1><p>You are sharing a record and an invitation—not automatically surrendering ownership.</p></div>
+      {sourceIdea && <aside className="lineage-intent" aria-label="Related idea source"><p className="eyebrow">Beginning from an existing record</p><h2>{sourceIdea.title}</h2><p>Your new idea will be shown as a continuation of this record. Its original story and creator remain visible in the lineage.</p><button className="text-link" type="button" onClick={() => onNavigate("submit")}>Start an independent idea instead</button></aside>}
       <form onSubmit={submit}>
         <fieldset><legend><span>01</span> The possibility</legend><label>Idea title<input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="What did you call it?" /></label><label>Short summary<textarea required rows="3" placeholder="Describe the possibility in one or two sentences." /></label><div className="form-row"><label>Category<select required defaultValue=""><option value="" disabled>Choose one</option>{categories.slice(1).map((item) => <option key={item}>{item}</option>)}</select></label><label>Status<select required defaultValue=""><option value="" disabled>Choose one</option><option>Unrealized</option><option>Paused</option><option>Abandoned</option><option>Almost made</option><option>Prototype failed</option></select></label></div></fieldset>
         <fieldset><legend><span>02</span> The story</legend><label>What did it want to become?<textarea required rows="6" placeholder="Share the original intention and the story around it." /></label><label>Why did it stop?<textarea required rows="4" placeholder="Time, cost, confidence, technology, life—or something else?" /></label><label>What did it teach you?<textarea rows="3" placeholder="Leave a useful lesson for the next person." /></label></fieldset>
         <fieldset><legend><span>03</span> The remains</legend><div className="upload-placeholder"><Mark /><label className="upload-control">Add images or video<input type="file" accept="image/*,video/*" multiple onChange={previewMedia} /></label><p>Preview up to four files locally. Nothing is uploaded or saved in this prototype.</p>{media.length > 0 && <div className="media-preview" aria-label="Selected media previews">{media.map(({ file, url }) => <figure key={`${file.name}-${file.lastModified}`}>{file.type.startsWith("video/") ? <video src={url} controls aria-label={`Preview of ${file.name}`} /> : <img src={url} alt={`Preview of ${file.name}`} />}<figcaption>{file.name}</figcaption></figure>)}</div>}</div><label>What remains?<textarea rows="3" placeholder="List sketches, research, prototypes, files, or links that exist." /></label><label>Your last wish<textarea required rows="3" placeholder="What do you hope someone does with this idea?" /></label></fieldset>
         <fieldset><legend><span>04</span> Permission</legend><label>How may others respond?<select required defaultValue=""><option value="" disabled>Select a permission mode</option>{permissionModes.map((item) => <option key={item}>{item}</option>)}</select></label><div className="permission-note"><strong>This is an expression of intent, not a legal license.</strong><p>Published ideas will retain creator credit and visible lineage. Formal licensing controls reuse of protected work.</p></div><label className="check"><input required type="checkbox" /> <span>I understand that this prototype does not transfer ownership and that my selected permission will be displayed publicly.</span></label></fieldset>
-        <button className="button button--large" type="submit">Preview this idea's afterlife</button>
+        <button className="button button--large" type="submit">{sourceIdea ? "Preview this continuation" : "Preview this idea's afterlife"}</button>
       </form>
     </section>
   );
@@ -113,11 +114,15 @@ function About({ onNavigate }) {
 
 function readHashRoute() {
   const route = window.location.hash.replace(/^#\/?/, "");
-  if (route.startsWith("idea/")) {
-    const idea = sampleIdeas.find((item) => item.id === route.slice(5));
+  const [path, search] = route.split("?");
+  if (path.startsWith("idea/")) {
+    const idea = sampleIdeas.find((item) => item.id === path.slice(5));
     if (idea) return { view: "detail", idea };
   }
-  if (["archive", "about", "submit"].includes(route)) return { view: route, idea: null };
+  if (["archive", "about", "submit"].includes(path)) {
+    const sourceId = new URLSearchParams(search).get("from");
+    return { view: path, idea: path === "submit" ? sampleIdeas.find((item) => item.id === sourceId) ?? null : null };
+  }
   return { view: "home", idea: null };
 }
 
@@ -126,7 +131,11 @@ export default function App() {
   const [view, setView] = useState(initialRoute.view);
   const [selectedIdea, setSelectedIdea] = useState(initialRoute.idea);
   const applyRoute = (route) => { setSelectedIdea(route.idea); setView(route.view); window.scrollTo({ top: 0, behavior: "auto" }); };
-  const navigate = (next) => { window.location.hash = next === "home" ? "/" : `/${next}`; applyRoute({ view: next, idea: null }); };
+  const navigate = (next, sourceIdea = null) => {
+    const suffix = next === "submit" && sourceIdea ? `?from=${encodeURIComponent(sourceIdea.id)}` : "";
+    window.location.hash = next === "home" ? "/" : `/${next}${suffix}`;
+    applyRoute({ view: next, idea: sourceIdea });
+  };
   const openIdea = (idea) => { window.location.hash = `/idea/${idea.id}`; applyRoute({ view: "detail", idea }); };
   useEffect(() => {
     const handleHashChange = () => applyRoute(readHashRoute());
@@ -134,5 +143,5 @@ export default function App() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
   useEffect(() => { document.title = view === "home" ? "Idea Afterlife" : `${view === "detail" ? selectedIdea?.title : view[0].toUpperCase() + view.slice(1)} · Idea Afterlife`; }, [view, selectedIdea]);
-  return <div className="app-shell"><Header onNavigate={navigate} view={view} /><main>{view === "home" && <Home onNavigate={navigate} onOpen={openIdea} />}{view === "archive" && <Archive onOpen={openIdea} />}{view === "detail" && selectedIdea && <IdeaDetail idea={selectedIdea} onBack={() => navigate("archive")} onNavigate={navigate} />}{view === "submit" && <SubmitIdea onNavigate={navigate} />}{view === "about" && <About onNavigate={navigate} />}</main><footer className="site-footer"><div><button className="wordmark" type="button" onClick={() => navigate("home")}><Mark /> Idea Afterlife</button><p>Some ideas only need another person to begin.</p></div><div><p>Public prototype · Milestone 1</p><p>Credit the origin. Continue with care.</p></div></footer></div>;
+  return <div className="app-shell"><Header onNavigate={navigate} view={view} /><main>{view === "home" && <Home onNavigate={navigate} onOpen={openIdea} />}{view === "archive" && <Archive onOpen={openIdea} />}{view === "detail" && selectedIdea && <IdeaDetail idea={selectedIdea} onBack={() => navigate("archive")} onNavigate={navigate} />}{view === "submit" && <SubmitIdea onNavigate={navigate} sourceIdea={selectedIdea} />}{view === "about" && <About onNavigate={navigate} />}</main><footer className="site-footer"><div><button className="wordmark" type="button" onClick={() => navigate("home")}><Mark /> Idea Afterlife</button><p>Some ideas only need another person to begin.</p></div><div><p>Public prototype · Milestone 1</p><p>Credit the origin. Continue with care.</p></div></footer></div>;
 }
