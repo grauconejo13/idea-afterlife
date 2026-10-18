@@ -26,9 +26,30 @@ export function Header({ onNavigate, view }) {
         Menu
       </button>
       <nav id="site-navigation" className={menuOpen ? "nav nav--open" : "nav"} aria-label="Primary navigation">
-        <button className={view === "archive" ? "is-active" : ""} type="button" onClick={() => navigate("archive")}>Archive</button>
-        <button className={view === "about" ? "is-active" : ""} type="button" onClick={() => navigate("about")}>How it works</button>
-        <button className="nav__cta" type="button" onClick={() => navigate("submit")}>Leave an idea</button>
+        <button
+          className={view === "archive" ? "is-active" : ""}
+          type="button"
+          aria-current={view === "archive" ? "page" : undefined}
+          onClick={() => navigate("archive")}
+        >
+          Archive
+        </button>
+        <button
+          className={view === "about" ? "is-active" : ""}
+          type="button"
+          aria-current={view === "about" ? "page" : undefined}
+          onClick={() => navigate("about")}
+        >
+          How it works
+        </button>
+        <button
+          className="nav__cta"
+          type="button"
+          aria-current={view === "submit" ? "page" : undefined}
+          onClick={() => navigate("submit")}
+        >
+          Leave an idea
+        </button>
       </nav>
     </header>
   );
