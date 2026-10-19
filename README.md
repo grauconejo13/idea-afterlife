@@ -10,6 +10,12 @@ Milestone 1 — public archive prototype, complete.
 
 The app includes an editorial landing page, searchable and filterable archive, idea detail pages, explicit permission badges, responsive navigation, and a local-only submission preview. A related-idea flow carries an origin record into the prototype submission experience so a future revival can keep its lineage visible. Authentication, persistence, real uploads, and publishing remain deferred to Milestone 2.
 
+## Prototype boundaries
+
+This is a demonstration, not a live idea-sharing service. The submission and related-idea flows are local previews: they do not create accounts, upload files, publish entries, or save submissions to a server. Do not enter sensitive or private material into the prototype.
+
+Permission badges describe the sample creators’ intentions; they are not a substitute for obtaining permission or checking the license before reusing someone else's work. Real consent enforcement and persistent lineage tracking belong to a later milestone.
+
 ## Core loop
 
 1. A creator leaves an idea behind and explains its history.
